@@ -623,8 +623,7 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("ticket/{}/history?page={};per_page={}".format(
-            ticket_id, page, per_page))
+        return self.history_get("ticket", ticket_id, page, per_page)
 
     def ticket_search(self, search_query, simple_search=False, page=1, per_page=20):
         """
@@ -709,13 +708,17 @@ class RTClient(object):
         return self.get("{}/{}/history?page={};per_page={}".format(
                         record_type, the_id, page, per_page))
 
-    def transaction_get_attachments(self, transaction_id):
+    def transaction_get_attachments(self, transaction_id, page=1, per_page=20):
         """
         Get attachments for transaction.
 
         Args:
             transaction_id (str): The id code of the specific transaction
                 to retrieve.
+            page (int, optional): The page number, for paginated results.
+                Defaults to the first (1) page.
+            per_page (int, optional): Number of results per page. Defaults
+                to 20 records per page, maximum value of 100.
 
         Returns:
             Dictionary with keys 'per_page', 'page', 'total', 'count', and
@@ -725,7 +728,13 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("transaction/{}/attachments".format(transaction_id))
+        return self.get(
+            "transaction/{}/attachments?page={};per_page={}".format(
+                transaction_id,
+                page,
+                per_page
+            )
+        )
 
     def attachment_get(self, attachment_id):
         """
@@ -794,9 +803,15 @@ class RTClient(object):
 
     # Queue functionality
 
-    def queue_get_all(self):
+    def queue_get_all(self, page=1, per_page=20):
         """
         Retrieve list of all queues you can see.
+
+        Args:
+            page (int, optional): The page number, for paginated results.
+                Defaults to the first (1) page.
+            per_page (int, optional): Number of results per page. Defaults
+                to 20 records per page, maximum value of 100.
 
         Returns:
             JSON dict in the form of the example below:
@@ -816,7 +831,7 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("queues/all")
+        return self.get("queues/all?page={};per_page={}")
 
     def queue_search(self, search_terms, page=1, per_page=20):
         """
@@ -947,7 +962,7 @@ class RTClient(object):
         the_queue = self._name_or_id(queue_id, queue_name)
         return self.delete("queue/{}".format(the_queue))
 
-    def queue_history(self,  queue_id=None, queue_name=None):
+    def queue_history(self,  queue_id=None, queue_name=None, page=1, per_page=20):
         """
         Retrieve list of transactions for a given queue.
 
@@ -956,6 +971,10 @@ class RTClient(object):
                 to retrieve history.
             queue_name (str, optional): The name code of the specific
                 queue to retrieve history.
+            page (int, optional): The page number, for paginated results.
+                Defaults to the first (1) page.
+            per_page (int, optional): Number of results per page. Defaults
+                to 20 records per page, maximum value of 100.
 
         Returns:
             JSON dict in the form of the example below:
@@ -978,11 +997,11 @@ class RTClient(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         the_queue = self._name_or_id(queue_id, queue_name)
-        return self.get("queue/{}/history".format(the_queue))
+        return self.history_get("queue", the_queue, page, per_page))
 
     # Catalog functionality
 
-    def catalog_get_all(self, page=1, per_page=20):
+    def catalog_get_all(self, page = 1, per_page = 20):
         """
         Retrieve list of all catalogs you can see.
 
@@ -1011,9 +1030,9 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("catalogs/all")
+        return self.get("catalogs/all?page={};per_page={}".format(page, per_page))
 
-    def catalog_search(self, search_terms, page=1, per_page=20):
+    def catalog_search(self, search_terms, page = 1, per_page = 20):
         """
         Search for catalogs using JSON searches syntax
 
@@ -1056,8 +1075,8 @@ class RTClient(object):
         return self.record_search(
             'catalog',
             search_terms,
-            page=page,
-            per_page=per_page  # maximum value is 100
+            page = page,
+            per_page = per_page  # maximum value is 100
         )
 
     def catalog_create(self, attrs):
@@ -1074,9 +1093,9 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.post("catalog", content=attrs)
+        return self.post("catalog", content = attrs)
 
-    def catalog_get(self, catalog_id=None, catalog_name=None):
+    def catalog_get(self, catalog_id = None, catalog_name = None):
         """
         Retrieve a catalog by numeric id or name.
 
@@ -1095,11 +1114,11 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        the_catalog = self._name_or_id(catalog_id, catalog_name)
+        the_catalog=self._name_or_id(catalog_id, catalog_name)
         return self.get("catalog/{}".format(the_catalog))
 
-    def catalog_update(self,  attrs, catalog_id=None,
-                       catalog_name=None):
+    def catalog_update(self,  attrs, catalog_id = None,
+                       catalog_name = None):
         """
         Update a catalog's metadata; provide JSON content.
 
@@ -1119,7 +1138,7 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        the_catalog = self._name_or_id(catalog_id, catalog_name)
+        the_catalog=self._name_or_id(catalog_id, catalog_name)
         return self.put(
             "catalog/{}".format(the_catalog),
             content=attrs
@@ -1314,7 +1333,7 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("asset/{}/history".format(asset_id))
+        return self.history_get("asset", asset_id, page, per_page)
 
     # User functionality
 
@@ -1486,7 +1505,7 @@ class RTClient(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         the_user = self._name_or_id(user_id, user_name)
-        return self.get("user/{}/history".format(the_user))
+        return self.history_get("user", the_user, page, per_page)
 
     # Groups functionality
 
@@ -1583,7 +1602,7 @@ class RTClient(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.get("group/{}/history".format(group_id))
+        return self.history_get("group", group_id, page, per_page)
 
     # Custom Field functionality
 
