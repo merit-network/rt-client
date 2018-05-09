@@ -17,7 +17,7 @@ class InvalidRecordException(Exception):
 
 class RTClient(object):
 
-    def __init__(self, username, password, base_url, auth_endpoint,
+    def __init__(self, username, password, base_url, auth_endpoint='NoAuth/Login.html',
                  api_endpoint='REST/2.0/', auth_token=None):
         """
         Args:
@@ -48,6 +48,8 @@ class RTClient(object):
         self.host = base_url + api_endpoint
         self.RECORD_TYPES = ('ticket', 'queue', 'asset', 'user', 'group',
                              'attachment', 'customfield', 'customrole')
+        self.STATUS_TYPES = ('new', 'open', 'stalled', 'resolved',
+                             'rejected', 'deleted')
 
     # REST V2
 
@@ -418,7 +420,8 @@ class RTClient(object):
 
         Args:
             ticket_id (str): The id code of the specific ticket to reply.
-            attrs (dict): A dictionary containing keys "Subject" and "Content"
+            attrs (dict): A dictionary containing keys "Subject", "Content",
+                and optionally "Cc" and "Bcc" fields.
             attachments (array, optional): Files to attach. Defaults to None.
 
         Returns:
@@ -569,10 +572,14 @@ class RTClient(object):
             Array containing a string with confirmation of status update.
 
         Raises:
+            ValueError: If the status does not match a valid existing status.
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.ticket_update(ticket_id, {"Status": status})
+        if status in self.STATUS_TYPES:
+            return self.ticket_update(ticket_id, {"Status": status})
+        else:
+            raise ValueError('Invalid ticket status type {}.'.format(status))
 
     def ticket_delete(self, ticket_id):
         """
@@ -708,6 +715,24 @@ class RTClient(object):
         return self.get("{}/{}/history?page={};per_page={}".format(
                         record_type, the_id, page, per_page))
 
+    def transaction_get(self, transaction_id):
+        """
+        Get metadata for a transaction.
+
+        Args:
+            transaction_id (str): The id code of the specific transaction
+                to retrieve.
+
+        Returns:
+            Dictionary with keys "Data", "Type", "_hyperlinks", "TimeTaken",
+                "Created", and "Object"
+
+        Raises:
+            See Python Requests docs at
+                http://docs.python-requests.org/en/master/_modules/requests/exceptions/
+        """
+        return self.get("transaction/{}".format(transaction_id))
+
     def transaction_get_attachments(self, transaction_id, page=1, per_page=20):
         """
         Get attachments for transaction.
@@ -736,9 +761,9 @@ class RTClient(object):
             )
         )
 
-    def attachment_get(self, attachment_id):
+    def attachment_data(self, attachment_id):
         """
-        Retrieve an attachment.
+        Retrieve attachment metadata.
 
         Args:
             attatchment_id (str): The id code of the specific attachment
@@ -754,6 +779,52 @@ class RTClient(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         return self.get("attachment/{}".format(attachment_id))
+
+    def attachment_url(self, attachment_id, ticket_id=None):
+        """
+        Retrieve direct link to attachment file.
+
+        Args:
+            attatchment_id (str): The id code of the specific attachment
+                to retrieve.
+            ticket_id (str, optional): The id code of the ticket the attatchment
+                is connected to.
+
+        Returns:
+            String URL for the file location.
+        """
+        if not ticket_id:
+            attach_data = self.attachment_data(attachment_id)
+            transaction_id = attach_data['TransactionId']['id']
+            ticket_id = self.transaction_get(transaction_id)['Object']['id']
+        url = self.base_host
+        url += 'Ticket/Attachment/{}/{}'.format(ticket_id, attachment_id)
+        return url
+
+    # def attachment_download(self, attachment_id, ticket_id=None):
+    #     """
+    #     Download and serve attachment file.
+    #
+    #     Args:
+    #         attatchment_id (str): The id code of the specific attachment
+    #             to retrieve.
+    #         ticket_id (str, optional): The id code of the ticket the attatchment
+    #             is connected to.
+    #
+    #     Returns:
+    #         The reqested attatchment file for download.
+    #     """
+    #     download_url = self.attachment_url(attachment_id, ticket_id=ticket_id)
+    #     r = self.sess.get(download_url, stream=True)
+    #     with NamedTemporaryFile(mode='wb') as the_file:
+    #         # Download the attachment
+    #         for chunk in r.iter_content(chunk_size=1024):
+    #             if chunk: # filter out keep-alive new chunks
+    #                 the_file.write(chunk)
+    #         # Serve the attachment
+
+
+
 
     def attatchement_search(self, search_query, page=1, per_page=20):
         """
@@ -997,7 +1068,7 @@ class RTClient(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         the_queue = self._name_or_id(queue_id, queue_name)
-        return self.history_get("queue", the_queue, page, per_page))
+        return self.history_get("queue", the_queue, page, per_page)
 
     # Catalog functionality
 
