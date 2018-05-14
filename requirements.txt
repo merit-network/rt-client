@@ -1,0 +1,2 @@
+pbr>=4.0.2 # Apache-2.0
+requests>=2.18.4 # Apache-2.0
