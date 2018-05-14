@@ -97,7 +97,7 @@ class RTClient(object):
 
     # Rest V1
 
-    def post_v1(self, url, content, attachments=[], *args, **kwargs):
+    def post_v1(self, url, content, attachments=None, *args, **kwargs):
         url = self.base_host + '/REST/1.0/' + url
 
         multipart_form_data = {}
@@ -800,31 +800,6 @@ class RTClient(object):
         url = self.base_host
         url += 'Ticket/Attachment/{}/{}'.format(ticket_id, attachment_id)
         return url
-
-    # def attachment_download(self, attachment_id, ticket_id=None):
-    #     """
-    #     Download and serve attachment file.
-    #
-    #     Args:
-    #         attatchment_id (str): The id code of the specific attachment
-    #             to retrieve.
-    #         ticket_id (str, optional): The id code of the ticket the attatchment
-    #             is connected to.
-    #
-    #     Returns:
-    #         The reqested attatchment file for download.
-    #     """
-    #     download_url = self.attachment_url(attachment_id, ticket_id=ticket_id)
-    #     r = self.sess.get(download_url, stream=True)
-    #     with NamedTemporaryFile(mode='wb') as the_file:
-    #         # Download the attachment
-    #         for chunk in r.iter_content(chunk_size=1024):
-    #             if chunk: # filter out keep-alive new chunks
-    #                 the_file.write(chunk)
-    #         # Serve the attachment
-
-
-
 
     def attatchement_search(self, search_query, page=1, per_page=20):
         """
@@ -1723,6 +1698,18 @@ class RTClient(object):
             page=page,
             per_page=per_page  # maximum value is 100
         )
+
+    def customfield_get_id(self, customfield_name):
+        search = self.customfield_search(
+            [{ "field":    "Name",
+               "value":    customfield_name }],
+            page=1,
+            per_page=1
+        )
+        if search['count'] != 0:
+            return search['items'][0]
+        else:
+            return None
 
     def customfield_get(self, customfield_id):
         """
