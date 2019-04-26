@@ -11,11 +11,14 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import json
+from numbers import Number
+from urllib.parse import quote_plus, urlencode
 
 # Constants -----------------------
 
 # Valid record types
-RECORD_TYPES = ('ticket', 'queue', 'asset', 'user', 'group',
+RECORD_TYPES = ('ticket', 'queue', 'asset', 'user', 'group', 'catalog',
                 'attachment', 'customfield', 'customrole')
 # Ticket Statuses
 STATUS_TYPES = ('new', 'open', 'stalled', 'resolved', 'rejected', 'deleted')
@@ -25,8 +28,10 @@ CLOSED_STATUS = ('resolved', 'rejected', 'deleted')
 # Exceptions -----------------------
 
 class UnsupportedError(Exception):
-    """Raised by :class:`Record` when any operation not
-    currently supported by the RT REST API is requested."""
+    """
+    Raised by :class:`Record` when any operation not
+    currently supported by the RT REST API is requested.
+    """
     pass
 
 
@@ -37,7 +42,11 @@ class RecordManager(object):
         """
         Generic Record Manager.
 
-        InvalidRecordException: If the record type is not in RECORD_TYPES.
+        Args:
+            client (RTClient): A valid RTClient instance.
+            record_type (str): String value present in RECORD_TYPES.
+
+        InvalidRecordException: If the record_type is not in RECORD_TYPES.
         """
         if record_type not in RECORD_TYPES:
             raise ValueError("Invalid record type: {}".format(record_type))
@@ -49,8 +58,6 @@ class RecordManager(object):
         Generic record creation.
 
         Args:
-            self.record_type (str): Record type from RECORD_TYPES,
-                e.g. 'ticket', 'queue', 'asset', 'user', 'group'.
             attrs (dict): A dictionary of attributes for the record.
             attachments (array, optional): Files to attach. Defaults to None.
 
@@ -68,9 +75,9 @@ class RecordManager(object):
                 attachments=attachments
             )
         else:
-            return self.client.get(
+            return self.client.post(
                 self.record_type,
-                content=attrs,
+                attrs,
             )
 
     def get(self, record_id):
@@ -78,8 +85,6 @@ class RecordManager(object):
         Generic record retrieval.
 
         Args:
-            self.record_type (str): Record type from RECORD_TYPES,
-                e.g. 'ticket', 'queue', 'asset', 'user', 'group'.
             record_id (str): The id code of the specific record to retrieve.
 
         Returns:
@@ -123,7 +128,8 @@ class RecordManager(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         return self.client.get(
-            '{}s/all?page={};per_page={}'.format(self.record_type, page, per_page)
+            '{}s/all?page={};per_page={}'.format(
+                self.record_type, page, per_page)
         )
 
     def update(self, record_id, attrs, attachments=None):
@@ -146,13 +152,13 @@ class RecordManager(object):
         if attachments:
             return self.client.get_v1(
                 "{}/{}/edit".format(self.record_type, record_id),
-                content=attrs,
+                attrs,
                 files=attachments
             )
         else:
             return self.client.put(
                 "{}/{}".format(self.record_type, record_id),
-                content=attrs
+                attrs
             )
 
     def delete(self, record_id):
@@ -215,7 +221,7 @@ class RecordManager(object):
             {'field': 'page', 'value': page},
             {'field': 'per_page', 'value': per_page}
         ])
-        return self.client.get(
+        return self.client.post(
             "{}s".format(self.record_type), content=search_terms
         )
 
@@ -250,7 +256,7 @@ class RecordManager(object):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         return self.client.get("{}/{}/history?page={};per_page={}".format(
-                        self.record_type, the_id, page, per_page))
+            self.record_type, record_id, page, per_page))
 
     def _not_supported_msg(self, operation):
         err_message = "{} is not supported ".format(operation.title())
@@ -290,9 +296,13 @@ class TicketManager(RecordManager):
         raise UnsupportedError(self._not_supported_msg('get all'))
 
     def bulk_create(self, data):
+        """ For the creation of multiple tickets in a single request """
+        # TODO Testing
         return self.client.post('/tickets/bulk', data)
 
     def bulk_update(self, data):
+        """ For making changes to multiple tickets in a single request """
+        # TODO Testing
         return self.client.put('/tickets/bulk', data)
 
     def reply(self, ticket_id, attrs, attachments=None):
@@ -329,16 +339,16 @@ class TicketManager(RecordManager):
             )
             return response.text
         else:
-            content = {"Action": "Correspond", "ContentType": "text/plain"}
-            content.update(attrs)
+            attrs.update({"ContentType": "text/plain"})
             return self.client.post(
                 'ticket/{}/correspond'.format(ticket_id),
-                content
+                attrs
             )
 
     def comment(self, ticket_id, comment, attachments=None):
         """
-        Add a comment to an existing ticket.
+        Add a comment to an existing ticket. Comments are for internal
+        use and not visible to clients.
 
         Args:
             ticket_id (str): The id code of the specific ticket to reply.
@@ -379,12 +389,15 @@ class TicketManager(RecordManager):
             response.raise_for_status()
             return response.json()
 
-    def close(self, ticket_id):
+    def close(self, ticket_id, reject=False):
         """
-        'Close' a ticket. Note there are only "Resolved" and "Rejected" states.
+        'Close' a ticket. The default staus used for closing is "Resolved"
+        though "Rejected" can be selected instead via an optional parameter.
 
         Args:
             ticket_id (str): The id code of the specific ticket to close.
+            reject (bool, optional): Optionally close as "Rejected" rather
+                than "Resolved."
 
         Returns:
             Array containing a string with confirmation of status update.
@@ -393,8 +406,8 @@ class TicketManager(RecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        # TODO: Ask about how this will be handled ideally.
-        return self.update(ticket_id, {"Status": "resolved"})
+        closed = "rejected" if reject else "resolved"
+        return self.update(ticket_id, {"Status": closed})
 
     def reopen(self, ticket_id):
         """
@@ -410,16 +423,15 @@ class TicketManager(RecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        # TODO does this need to verify a 'closed' state before changing to open?
         return self.update(ticket_id, {"Status": "open"})
 
     def change_status(self, ticket_id, new_status):
         """
-        Change the a given ticket's status to specified value.
+        Change a given ticket's status to specified value.
 
         Args:
             ticket_id (str): The id code of the specific ticket to reopen.
-            status (str): A valid ticket state as a string. Valid states
+            new_status (str): A valid ticket state as a string. Valid states
                 include: "new", "open", "blocked", "stalled", "resolved", and
                 "rejected".
 
@@ -431,12 +443,53 @@ class TicketManager(RecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        if new_status in self.STATUS_TYPES:
+        if new_status in STATUS_TYPES:
             return self.update(ticket_id, {"Status": new_status})
         else:
-            raise ValueError('Invalid ticket status type {}.'.format(new_status))
+            raise ValueError(
+                'Invalid ticket status type {}.'.format(new_status))
 
-    def search(self, search_query, simple_search=False, page=1, per_page=20):
+    def history(self, ticket_id, page=1, per_page=20):
+        """
+        retrieve transactions related to a specific ticket.
+
+        Args:
+            ticket_id (str): The id code of the ticket.
+            page (int, optional): The page number, for paginated results.
+                Defaults to the first (1) page.
+            per_page (int, optional): Number of results per page. Defaults
+                to 20 records per page, maximum value of 100.
+
+        Returns:
+            JSON dict in the form of the example below:
+
+            {
+               "count" : 20,
+               "page" : 1,
+               "per_page" : 20,
+               "total" : 3810,
+               "items" : [
+                  { … },
+                  { … },
+                    …
+               ]
+            }
+
+        Raises:
+            See Python Requests docs at
+                http://docs.python-requests.org/en/master/_modules/requests/exceptions/
+        """
+        payload = {
+            'page': page,
+            'per_page': per_page,
+            'fields': "Data,Type,Creator,Created"
+        }
+        endpoint = "{}/{}/history?".format(self.record_type, ticket_id)
+        endpoint += urlencode(payload, quote_via=quote_plus)
+        return self.client.get(endpoint)
+
+
+    def search(self, search_query, fields=None, simple_search=False, page=1, per_page=20):
         """
         Search for tickets using TicketSQL.
 
@@ -445,6 +498,11 @@ class TicketManager(RecordManager):
                 Example: '(Status = "new" OR Status = "open") AND Queue = "General"'
                 See https://rt-wiki.bestpractical.com/wiki/TicketSQL for more
                 detailed information.
+            fields (dict, optional): A dict of fields and subfields to be included
+                in the search results. Expected format is the form of
+                {"field": "FieldA,FieldB,FieldC...",
+                 "field[FieldA]": "Subfield1...",
+                 "field[FieldA][Subfield1]": "Sub-subfield..."}
             simple_search (bool, optional): When True use simple search syntax,
                 when False use TicketSQL.
             page (int, optional): The page number, for paginated results.
@@ -472,16 +530,28 @@ class TicketManager(RecordManager):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
 
         """
-        response = self.client.post(
-            self.host + 'tickets',
-            {
-                "query": search_query,
-                "simple": 1 if simple_search else 0,
-                "page": page,
-                "per_page": per_page
-            }
-        )
-        return response.json()
+        payload = {
+            "query": search_query,
+            "simple": 1 if simple_search else 0,
+            "page": page,
+            "per_page": per_page
+        }
+
+        if fields:
+            for key, value in fields.items():
+                payload[key] = value
+
+        search_endpoint = 'tickets?' + urlencode(payload, quote_via=quote_plus)
+        return self.client.get(search_endpoint)
+
+    @staticmethod
+    def get_tenant_id(ticket):
+        cf = ticket.get('CustomFields')
+        if not cf:
+            return
+        for field_dict in cf:
+            if field_dict.get('name') == 'Tenant ID':
+                return field_dict.get('values')
 
 
 class TransactionManager(LimitedRecordManager):
@@ -510,13 +580,14 @@ class TransactionManager(LimitedRecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        return self.client.get(
-            "transaction/{}/attachments?page={};per_page={}".format(
-                transaction_id,
-                page,
-                per_page
-            )
-        )
+        payload = {
+            'page': page,
+            'per_page': per_page,
+            'fields': "Subject,Content,ContentType,Created,Creator"
+        }
+        endpoint = 'transaction/{}/attachments?'.format(transaction_id)
+        endpoint += urlencode(payload, quote_via=quote_plus)
+        return self.client.get(endpoint)
 
 
 class AttachmentManager(LimitedRecordManager):
@@ -552,15 +623,30 @@ class CustomFieldManager(LimitedRecordManager):
 
     def __init__(self, client):
         self.client = client
+        self.customfield_cache = {}
 
     def get_id(self, customfield_name):
-        search = self.search(
-            [{ "field":    "Name",
-               "value":    customfield_name }],
-            page=1,
-            per_page=1
-        )
-        if search['count'] != 0:
-            return search['items'][0]
+        """
+        Translate a CustomField name into its associated id
+
+        Args:
+            customfield_name (str): The name of the CustomField.
+
+        Returns:
+            String CustomField id
+        """
+        if self.customfield_cache.get(customfield_name, None):
+            return self.customfield_cache[customfield_name]
         else:
-            return None
+            search = self.search(
+                [{"field":    "Name",
+                  "value":    customfield_name}],
+                page=1,
+                per_page=1
+            )
+            if search['count'] != 0:
+                result = search['items'][0]['id']
+                self.customfield_cache[customfield_name] = result
+                return result
+            else:
+                return None

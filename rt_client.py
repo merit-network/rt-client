@@ -13,6 +13,7 @@
 #    under the License.
 
 import json
+import logging
 import re
 from collections import OrderedDict
 from io import StringIO
@@ -20,9 +21,11 @@ from tempfile import NamedTemporaryFile
 
 import requests
 
-from rt_record_manager import (AttachmentManager, CustomFieldManager,
-                               LimitedRecordManager, RecordManager,
-                               TicketManager, TransactionManager)
+from rt_client.rt_record_manager import (AttachmentManager, CustomFieldManager,
+                                         LimitedRecordManager, RecordManager,
+                                         TicketManager, TransactionManager)
+
+logger = logging.getLogger(__name__)
 
 # Client Class -----------------------
 
@@ -41,37 +44,65 @@ class RTClient(object):
             auth_token (str, optional): Authentication token from
                 the RT::Authen::Token extension. Defaults to None.
         """
+        # Authentication
         self.sess = requests.Session()
-        if auth_token:
-            token = 'token {}'.format(auth_token)
-            self.sess.post(base_url + auth_endpoint,
-                           data={'Authentication': token}, verify=False)
-        else:
-            self.sess.post(
-                base_url + auth_endpoint,
-                data={
-                    'user': username,
-                    'pass': password
-                },
-                verify=False)
-
+        self._authenicate(
+            base_url + auth_endpoint,
+            username,
+            password,
+            auth_token
+        )
+        # Set important endpoints
         self.base_host = base_url
         self.host = base_url + api_endpoint
+        # Create record manager links
+        self._create_record_managers()
 
-        # Special Records
-        self.ticket = TicketManager(self)
-        self.transaction = TransactionManager(self)
-        self.attachment = AttachmentManager(self)
-        self.customfield = CustomFieldManager(self)
+    def _authenicate(self, auth_url, username, password, auth_token=None):
+        """ Session authentication function """
+        try:
+            # Use token authentication, if able
+            if auth_token:
+                token = 'token {}'.format(auth_token)
+                self.sess.post(
+                   auth_url,
+                   data={'Authentication': token},
+                   verify=False
+                )
+            # Otherwise, revert to username/password authentication
+            else:
+                self.sess.post(
+                    auth_url,
+                    data={
+                        'user': username,
+                        'pass': password
+                    },
+                    verify=False)
+            return self.sess
+        except:
+            logger.debug("RT Client Authentication Failure")
+            raise
 
-        # Fully supported records
-        for full_record in ['queue', 'catalog', 'asset', 'user']:
-            setattr(self, full_record,  RecordManager(self, full_record))
+    def _create_record_managers(self):
+        """ Creates managers for each required record type """
+        try:
+            # Special Records
+            self.ticket = TicketManager(self)
+            self.transaction = TransactionManager(self)
+            self.attachment = AttachmentManager(self)
+            self.customfield = CustomFieldManager(self)
 
-        # Partially supported records
-        for limited_record in ['group', 'customrole']:
-            setattr(self, limited_record,
-                    LimitedRecordManager(self, limited_record))
+            # Fully supported records
+            for full_record in ['queue', 'catalog', 'asset', 'user']:
+                setattr(self, full_record,  RecordManager(self, full_record))
+
+            # Partially supported records
+            for limited_record in ['group', 'customrole']:
+                setattr(self, limited_record,
+                        LimitedRecordManager(self, limited_record))
+        except:
+            logger.debug("Failed to create RT Client Record Managers")
+            raise
 
     # REST V2
 
@@ -79,8 +110,14 @@ class RTClient(object):
         """ Generic GET request to specified URL """
         url = self.host + url
         response = self.sess.get(url, verify=False, *args, **kwargs)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response.raise_for_status()
+            result = response.json()
+            return result
+        except (json.decoder.JSONDecodeError) as decode_err:
+            raise
+        except requests.exceptions.HTTPError as http_err:
+            raise
 
     def post(self, url, content, files=None, *args, **kwargs):
         """ Generic POST request to specified URL """
@@ -88,7 +125,6 @@ class RTClient(object):
         response = self.sess.post(
             url,
             json=content,
-            files=files,
             headers={"Content-Type": "application/json"},
             *args,
             **kwargs
@@ -102,7 +138,6 @@ class RTClient(object):
         response = self.sess.put(
             url,
             json=content,
-            files={'file': files},
             headers={"Content-Type": "application/json"},
             *args,
             **kwargs
@@ -176,10 +211,12 @@ class RTClient(object):
 
 
 class RTParser(object):
-    """ Modified version from python-rtkit.
-        Apache Licensed, Copyright 2011 Andrea De Marco.
-        See: https://github.com/z4r/python-rtkit/blob/master/rtkit/parser.py"""
-    """ RFC5322 Parser - see https://tools.ietf.org/html/rfc5322"""
+    """
+    Modified version from python-rtkit.
+    Apache Licensed, Copyright 2011 Andrea De Marco.
+    See: https://github.com/z4r/python-rtkit/blob/master/rtkit/parser.py
+    RFC5322 Parser - see https://tools.ietf.org/html/rfc5322
+    """
 
     HEADER = re.compile(r'^RT/(?P<v>.+)\s+(?P<s>(?P<i>\d+).+)')
     COMMENT = re.compile(r'^#\s+.+$')
@@ -188,8 +225,7 @@ class RTParser(object):
 
     @classmethod
     def parse(cls, body):
-        """ :returns: A list of RFC5322-like section
-        """
+        """ :returns: A list of RFC5322-like section """
         section = cls.build(body)
         return [cls.decode(lines) for lines in section]
 
@@ -210,7 +246,6 @@ class RTParser(object):
         key = None
         for line in lines:
             if not cls.COMMENT.match(line):
-                print(line)
                 if ':' not in line:
                     value = line.strip(' ')
                     data_dict[key] = data_dict[key] + value
