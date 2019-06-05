@@ -69,6 +69,8 @@ def build_fields_query(fields):
         for f in fields:
             if isinstance(f, dict):
                 payload.update(_build_subfields_query(f))
+            elif isinstance(f, (list, set, tuple)):
+                non_sub_fields += list(f)
             else:
                 non_sub_fields.append(f)
         payload["fields"] = ",".join(non_sub_fields)

@@ -87,6 +87,16 @@ class TestUtils(unittest.TestCase):
                     "fields[FieldC][SubfieldC]": "Sub-subfieldC",
                 },
             ),
+            (
+                [
+                    ["FieldA", "FieldB", "FieldD", "FieldE"],
+                    {"FieldC": {"SubfieldC": "Sub-subfieldC"}},
+                ],
+                {
+                    "fields": "FieldA,FieldB,FieldD,FieldE",
+                    "fields[FieldC][SubfieldC]": "Sub-subfieldC",
+                },
+            ),
         ]
 
         for query, expected in queries:
