@@ -40,10 +40,10 @@ class TicketManager(RecordManager):
 
     def _prep_attachments(self, attachments):
         files = []
-        for attachment in attachments:
+        for counter, attachment in enumerate(attachments):
             files.append(
                 (
-                    "Attachment",
+                    f"attachment_{counter}",
                     (
                         os.path.basename(attachment),
                         open(attachment, "rb"),
