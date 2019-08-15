@@ -79,7 +79,7 @@ class RecordManager(object):
         """
         return self.client.get(f"{self.record_type}/{record_id}")
 
-    def get_all(self, fields=None, page=1, per_page=20):
+    def get_all(self, fields=None, order_by=None, order="ASC", page=1, per_page=20):
         """
         Generic record archive retrieval.
 
@@ -95,6 +95,9 @@ class RecordManager(object):
                     - {"FieldA": {"SubfieldA": "Sub-subfieldA"},
                        {"FieldC": {"SubfieldC": "Sub-subfieldC"}}
                     - ["FieldA", {"FieldA": "SubfieldA"}]
+            order_by (str, optional): A field to sort records by.
+            order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
+                Defaults to 'ASC'
             page (int, optional): The page number, for paginated results.
                 Defaults to the first (1) page.
             per_page (int, optional): Number of results per page. Defaults
@@ -123,6 +126,9 @@ class RecordManager(object):
 
         if fields:
             payload.update(utils.build_fields_query(fields))
+
+        if order_by:
+            payload.update({"orderby": order_by, "order": order})
 
         query_string = urlencode(payload, quote_via=quote_plus)
 
