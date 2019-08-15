@@ -279,7 +279,8 @@ class TicketManager(RecordManager):
         return self.client.get(endpoint)
 
     def search(
-        self, search_query, fields=None, simple_search=False, page=1, per_page=20
+        self, search_query, fields=None, simple_search=False, page=1, per_page=20,
+        order_by=None, order="ASC"
     ):
         """
         Search for tickets using TicketSQL.
@@ -300,6 +301,9 @@ class TicketManager(RecordManager):
                     - ["FieldA", {"FieldA": "SubfieldA"}]
             simple_search (bool, optional): When True use simple search syntax,
                 when False use TicketSQL.
+            order_by (str, optional): A field to sort records by.
+            order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
+                    Defaults to 'ASC'
             page (int, optional): The page number, for paginated results.
                 Defaults to the first (1) page.
             per_page (int, optional): Number of results per page. Defaults
@@ -334,6 +338,9 @@ class TicketManager(RecordManager):
 
         if fields:
             payload.update(utils.build_fields_query(fields))
+
+        if order_by:
+            payload.update({"orderby": order_by, "order": order})
 
         search_endpoint = "tickets?" + urlencode(payload, quote_via=quote_plus)
         return self.client.get(search_endpoint)
