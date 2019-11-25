@@ -79,7 +79,7 @@ class RecordManager(object):
         """
         return self.client.get(f"{self.record_type}/{record_id}")
 
-    def get_all(self, fields=None, order_by=None, order="ASC", page=1, per_page=20):
+    def get_all(self, fields=None, order_by=None, order="DESC", page=1, per_page=20):
         """
         Generic record archive retrieval.
 
@@ -97,7 +97,7 @@ class RecordManager(object):
                     - ["FieldA", {"FieldA": "SubfieldA"}]
             order_by (str, optional): A field to sort records by.
             order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
-                Defaults to 'ASC'
+                Defaults to 'DESC'
             page (int, optional): The page number, for paginated results.
                 Defaults to the first (1) page.
             per_page (int, optional): Number of results per page. Defaults
@@ -168,7 +168,7 @@ class RecordManager(object):
         return self.client.delete(f"{self.record_type}/{record_id}")
 
     def search(self, search_terms, fields=None, page=1, per_page=20,
-               order_by=None, order="ASC"):
+               order_by=None, order="DESC"):
         """
         Generic record search.
 
@@ -199,7 +199,7 @@ class RecordManager(object):
                 to 20 records per page, maximum value of 100.
             order_by (str, optional): A field to sort records by.
             order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
-                Defaults to 'ASC'
+                Defaults to 'DESC'
 
         Returns:
             JSON dict in the form of the example below:

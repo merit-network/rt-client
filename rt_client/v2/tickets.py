@@ -230,7 +230,8 @@ class TicketManager(RecordManager):
             raise ValueError(f"Invalid ticket status type {new_status}.")
 
     def history(
-        self, ticket_id, fields="Data,Type,Creator,Created", page=1, per_page=20
+        self, ticket_id, fields="Data,Type,Creator,Created", page=1, per_page=20,
+        order_by=None, order="DESC"
     ):
         """
         retrieve transactions related to a specific ticket.
@@ -250,6 +251,9 @@ class TicketManager(RecordManager):
                 Defaults to the first (1) page.
             per_page (int, optional): Number of results per page. Defaults
                 to 20 records per page, maximum value of 100.
+            order_by (str, optional): A field to sort records by.
+            order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
+                Defaults to 'DESC'
 
         Returns:
             JSON dict in the form of the example below:
@@ -274,13 +278,16 @@ class TicketManager(RecordManager):
         if fields:
             payload.update(utils.build_fields_query(fields))
 
+        if order_by:
+            payload.update({"orderby": order_by, "order": order})
+
         endpoint = f"{self.record_type}/{ticket_id}/history?"
         endpoint += urlencode(payload, quote_via=quote_plus)
         return self.client.get(endpoint)
 
     def search(
         self, search_query, fields=None, simple_search=False, page=1, per_page=20,
-        order_by=None, order="ASC"
+        order_by=None, order="DESC"
     ):
         """
         Search for tickets using TicketSQL.
@@ -303,7 +310,7 @@ class TicketManager(RecordManager):
                 when False use TicketSQL.
             order_by (str, optional): A field to sort records by.
             order (str, optional): The order to sort results in. 'ASC' or 'DESC'.
-                    Defaults to 'ASC'
+                    Defaults to 'DESC'
             page (int, optional): The page number, for paginated results.
                 Defaults to the first (1) page.
             per_page (int, optional): Number of results per page. Defaults
