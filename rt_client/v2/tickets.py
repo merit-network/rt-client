@@ -40,10 +40,10 @@ class TicketManager(RecordManager):
 
     def _prep_attachments(self, attachments):
         files = []
-        for counter, attachment in enumerate(attachments):
+        for attachment in attachments:
             files.append(
                 (
-                    f"attachment_{counter}",
+                    f"Attachments",
                     (
                         os.path.basename(attachment),
                         open(attachment, "rb"),
@@ -70,7 +70,7 @@ class TicketManager(RecordManager):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         if attachments:
-            files = [("Json", (None, json.dumps(attrs), "application/json"))]
+            files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
             return self.client.post_files(self.record_type, files)
         else:
@@ -93,7 +93,7 @@ class TicketManager(RecordManager):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         if attachments:
-            files = [("Json", (None, json.dumps(attrs), "application/json"))]
+            files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
             return self.client.post_files(f"{self.record_type}/{record_id}", files)
         else:
@@ -128,7 +128,7 @@ class TicketManager(RecordManager):
         """
         if attachments:
             attrs.update({"ContentType": "application/json"})
-            files = [("Json", (None, json.dumps(attrs), "application/json"))]
+            files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
             return self.client.post_files(f"ticket/{ticket_id}/correspond", files)
         else:
@@ -155,7 +155,7 @@ class TicketManager(RecordManager):
         """
         if attachments:
             content = {"id": ticket_id, "Action": "comment", "Text": comment}
-            files = [("Json", (None, json.dumps(content), "application/json"))]
+            files = [("JSON", (None, json.dumps(content), "application/json"))]
             files += self._prep_attachments(attachments)
             return self.client.post_files(f"ticket/{ticket_id}/comment", files)
         else:
