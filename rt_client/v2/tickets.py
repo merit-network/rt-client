@@ -127,12 +127,10 @@ class TicketManager(RecordManager):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
         if attachments:
-            attrs.update({"ContentType": "application/json"})
             files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
             return self.client.post_files(f"ticket/{ticket_id}/correspond", files)
         else:
-            attrs.update({"ContentType": "text/plain"})
             return self.client.post(f"ticket/{ticket_id}/correspond", attrs)
 
     def comment(self, ticket_id, comment, attachments=None):
