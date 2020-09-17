@@ -25,15 +25,18 @@ class TestUtils(unittest.TestCase):
             (["FieldA", "FieldB", "FieldC"], {"fields": "FieldA,FieldB,FieldC"}),
             (
                 {"FieldA": {"SubfieldA": "Sub-subfieldA"}},
-                {"fields[FieldA][SubfieldA]": "Sub-subfieldA"},
+                {"fields": "FieldA", "fields[FieldA][SubfieldA]": "Sub-subfieldA"},
             ),
             (
                 {"FieldA": ["SubfieldA", "SubfieldB"]},
-                {"fields[FieldA]": "SubfieldA,SubfieldB"},
+                {"fields": "FieldA", "fields[FieldA]": "SubfieldA,SubfieldB"},
             ),
             (
                 {"FieldA": {"SubfieldA": {"Sub-subfieldA": "Sub-sub-subfieldA"}}},
-                {"fields[FieldA][SubfieldA][Sub-subfieldA]": "Sub-sub-subfieldA"},
+                {
+                    "fields": "FieldA",
+                    "fields[FieldA][SubfieldA][Sub-subfieldA]": "Sub-sub-subfieldA",
+                },
             ),
             (
                 {
@@ -44,7 +47,8 @@ class TestUtils(unittest.TestCase):
                     }
                 },
                 {
-                    "fields[FieldA][SubfieldA][Sub-subfieldA]": "Sub-sub-subfieldA,Sub-sub-subfieldB" # noqa
+                    "fields": "FieldA",
+                    "fields[FieldA][SubfieldA][Sub-subfieldA]": "Sub-sub-subfieldA,Sub-sub-subfieldB",  # noqa
                 },
             ),
             (
@@ -53,6 +57,7 @@ class TestUtils(unittest.TestCase):
                     "FieldB": {"SubfieldB": {"Sub-subfieldB": "Sub-sub-subfieldB"}},
                 },
                 {
+                    "fields": "FieldA,FieldB",
                     "fields[FieldA][SubfieldA][Sub-subfieldA]": "Sub-sub-subfieldA",
                     "fields[FieldB][SubfieldB][Sub-subfieldB]": "Sub-sub-subfieldB",
                 },
@@ -60,7 +65,7 @@ class TestUtils(unittest.TestCase):
             (
                 ["FieldA", "FieldB", {"FieldC": {"SubfieldC": "Sub-subfieldC"}}],
                 {
-                    "fields": "FieldA,FieldB",
+                    "fields": "FieldA,FieldB,FieldC",
                     "fields[FieldC][SubfieldC]": "Sub-subfieldC",
                 },
             ),
@@ -71,7 +76,7 @@ class TestUtils(unittest.TestCase):
                     {"FieldC": {"SubfieldC": "Sub-subfieldC"}},
                 ],
                 {
-                    "fields": "FieldA",
+                    "fields": "FieldA,FieldB,FieldC",
                     "fields[FieldB][SubfieldB]": "Sub-subfieldB",
                     "fields[FieldC][SubfieldC]": "Sub-subfieldC",
                 },
@@ -83,7 +88,7 @@ class TestUtils(unittest.TestCase):
                     {"FieldC": {"SubfieldC": "Sub-subfieldC"}},
                 ],
                 {
-                    "fields": "FieldA,FieldB,FieldD,FieldE",
+                    "fields": "FieldA,FieldB,FieldD,FieldE,FieldC",
                     "fields[FieldC][SubfieldC]": "Sub-subfieldC",
                 },
             ),
@@ -93,7 +98,7 @@ class TestUtils(unittest.TestCase):
                     {"FieldC": {"SubfieldC": "Sub-subfieldC"}},
                 ],
                 {
-                    "fields": "FieldA,FieldB,FieldD,FieldE",
+                    "fields": "FieldA,FieldB,FieldC,FieldD,FieldE",
                     "fields[FieldC][SubfieldC]": "Sub-subfieldC",
                 },
             ),

@@ -14,12 +14,14 @@
 
 
 def _build_subfields_query(subfields):
-    payload = {}
+    root_fields = []
+    subfield_payload = {}
     for subfield in subfields.items():
+        root_fields.append(subfield[0])
         keys, value = _build_subfield_query({subfield[0]: subfield[1]})
         keys = [f"[{k}]" for k in keys]
-        payload[f"fields{''.join(keys)}"] = value
-    return payload
+        subfield_payload[f"fields{''.join(keys)}"] = value
+    return root_fields, subfield_payload
 
 
 def _build_subfield_query(subfield):
@@ -63,17 +65,27 @@ def build_fields_query(fields):
     payload = {}
 
     if isinstance(fields, dict):
-        payload.update(_build_subfields_query(fields))
+        root_fields, subfield_payload = _build_subfields_query(fields)
+        # NOTE(adriant): For testing and consistency, we want the fields
+        #                sorted, but a set breaks that, so we do this.
+        unique_non_sub_fields = sorted(list(set(root_fields)))
+        payload["fields"] = ",".join(unique_non_sub_fields)
+        payload.update(subfield_payload)
     elif isinstance(fields, (list, set, tuple)):
         non_sub_fields = []
         for f in fields:
             if isinstance(f, dict):
-                payload.update(_build_subfields_query(f))
+                root_fields, subfield_payload = _build_subfields_query(f)
+                non_sub_fields += root_fields
+                payload.update(subfield_payload)
             elif isinstance(f, (list, set, tuple)):
                 non_sub_fields += list(f)
             else:
                 non_sub_fields.append(f)
-        payload["fields"] = ",".join(non_sub_fields)
+        # NOTE(adriant): For testing and consistency, we want the fields
+        #                sorted, but a set breaks that, so we do this.
+        unique_non_sub_fields = sorted(list(set(non_sub_fields)))
+        payload["fields"] = ",".join(unique_non_sub_fields)
     else:
         payload["fields"] = fields
 

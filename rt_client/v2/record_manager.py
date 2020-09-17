@@ -135,7 +135,7 @@ class RecordManager(object):
         return self.client.get(f"{self.record_type}s/all?{query_string}")
 
     def update(self, record_id, attrs):
-        """"
+        """
         Generic record update.
 
         Args:
@@ -167,8 +167,15 @@ class RecordManager(object):
         """
         return self.client.delete(f"{self.record_type}/{record_id}")
 
-    def search(self, search_terms, fields=None, page=1, per_page=20,
-               order_by=None, order="DESC"):
+    def search(
+        self,
+        search_terms,
+        fields=None,
+        page=1,
+        per_page=20,
+        order_by=None,
+        order="DESC",
+    ):
         """
         Generic record search.
 

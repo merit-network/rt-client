@@ -43,7 +43,7 @@ class TicketManager(RecordManager):
         for attachment in attachments:
             files.append(
                 (
-                    f"Attachments",
+                    "Attachments",
                     (
                         os.path.basename(attachment),
                         open(attachment, "rb"),
@@ -69,6 +69,8 @@ class TicketManager(RecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
+        if "ContentType" not in attrs:
+            attrs["ContentType"] = "text/plain"
         if attachments:
             files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
@@ -77,7 +79,7 @@ class TicketManager(RecordManager):
             return self.client.post(self.record_type, attrs)
 
     def update(self, record_id, attrs, attachments=None):
-        """"
+        """
         ticket update.
 
         Args:
@@ -126,6 +128,8 @@ class TicketManager(RecordManager):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
+        if "ContentType" not in attrs:
+            attrs["ContentType"] = "text/plain"
         if attachments:
             files = [("JSON", (None, json.dumps(attrs), "application/json"))]
             files += self._prep_attachments(attachments)
@@ -228,8 +232,13 @@ class TicketManager(RecordManager):
             raise ValueError(f"Invalid ticket status type {new_status}.")
 
     def history(
-        self, ticket_id, fields="Data,Type,Creator,Created", page=1, per_page=20,
-        order_by=None, order="DESC"
+        self,
+        ticket_id,
+        fields="Data,Type,Creator,Created",
+        page=1,
+        per_page=20,
+        order_by=None,
+        order="DESC",
     ):
         """
         retrieve transactions related to a specific ticket.
@@ -284,8 +293,14 @@ class TicketManager(RecordManager):
         return self.client.get(endpoint)
 
     def search(
-        self, search_query, fields=None, simple_search=False, page=1, per_page=20,
-        order_by=None, order="DESC"
+        self,
+        search_query,
+        fields=None,
+        simple_search=False,
+        page=1,
+        per_page=20,
+        order_by=None,
+        order="DESC",
     ):
         """
         Search for tickets using TicketSQL.
