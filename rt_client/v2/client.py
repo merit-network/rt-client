@@ -164,9 +164,7 @@ class Client(object):
         General Information about the RT system, including RT version and
         plugins
         """
-        response = self.sess.get("rt", verify=self.verify)
-        response.raise_for_status()
-        return response.json()
+        return self.get("rt")
 
     def rt_version(self):
         """
