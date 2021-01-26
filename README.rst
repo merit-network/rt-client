@@ -18,3 +18,20 @@ complete.
 In the future we also intend to add a CLI which will use the library and offer
 a nice way of interacting with RT from the commandline based on the features
 the V2 API gives us.
+
+Getting Started
+***************
+
+.. code-block:: python
+
+  from rt_client.client import Client
+
+  rt = Client(
+    username="jsmith",
+    password="supersecret",
+    endpoint="https://rt.acme.org/",
+    auth_endpoint="NoAuth/Login.html",
+    api_endpoint="REST/2.0/",
+  )
+
+  tickets = rt.ticket.search("Queue='urgent'")
