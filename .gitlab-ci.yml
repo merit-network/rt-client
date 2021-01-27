@@ -1,0 +1,18 @@
+image: python:alpine
+
+stages:
+  - test
+
+before_script:
+  - apk add --no-cache git gcc musl-dev
+  - pip install tox
+
+pep8:
+  stage: test
+  script:
+    - tox -e pep8
+
+py3:
+  stage: test
+  script:
+    - tox -e py3
