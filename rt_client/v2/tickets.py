@@ -164,13 +164,11 @@ class TicketManager(RecordManager):
             # Because this endpoint needs a text/plain content type,
             # it calls client.sess.post directly, rather than going through
             # client.post like most other methods.
-            response = self.client.sess.post(
+            return self.client.post(
                 self.client.host + f"ticket/{ticket_id}/comment",
                 data=comment,
                 headers={"Content-Type": "text/plain"},
             )
-            response.raise_for_status()
-            return response.json()
 
     def close(self, ticket_id, reject=False):
         """
