@@ -7,10 +7,10 @@ before_script:
   - apk add --no-cache git gcc musl-dev
   - pip install tox
 
-pep8:
+code_style:
   stage: test
   script:
-    - tox -e pep8
+    - tox -e pep8,black_check
 
 py3:
   stage: test
