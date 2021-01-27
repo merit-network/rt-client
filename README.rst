@@ -17,11 +17,9 @@ Getting Started
   from rt_client.client import Client
 
   rt = Client(
-    username="jsmith",
-    password="supersecret",
-    endpoint="https://rt.acme.org/",
-    auth_endpoint="NoAuth/Login.html",
-    api_endpoint="REST/2.0/",
+      username="jsmith",
+      password="supersecret",
+      endpoint="https://rt.acme.org/",
   )
 
   tickets = rt.ticket.search("Queue='urgent'")
