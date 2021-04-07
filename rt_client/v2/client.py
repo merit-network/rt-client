@@ -72,9 +72,7 @@ class Client(object):
             # Use token authentication, if able
             if self.auth_token:
                 token = f"token {self.auth_token}"
-                self.sess.post(
-                    auth_url, data={"Authentication": token}, verify=self.verify
-                )
+                self.sess.headers.update({"Authorization": token})
             # Otherwise, revert to username/password authentication
             else:
                 self.sess.post(
