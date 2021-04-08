@@ -227,11 +227,7 @@ class RecordManager(object):
             See Python Requests docs at
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
         """
-        search_terms.extend(
-            [{"field": "page", "value": page}, {"field": "per_page", "value": per_page}]
-        )
-
-        payload = {}
+        payload = {"page": page, "per_page": per_page}
         if fields:
             payload.update(utils.build_fields_query(fields))
 
