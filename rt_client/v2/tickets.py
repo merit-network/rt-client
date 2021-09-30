@@ -362,4 +362,5 @@ class TicketManager(RecordManager):
 
         search_endpoint = "tickets"
 
-        return self.client.post(search_endpoint, data=payload)
+        # Sidestep the client.post, since it assumes POSTs are JSON-only
+        return self.client.request("POST", search_endpoint, data=payload)
