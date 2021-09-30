@@ -347,20 +347,23 @@ class TicketManager(RecordManager):
                 http://docs.python-requests.org/en/master/_modules/requests/exceptions/
 
         """
-        payload = {
-            "query": search_query,
+        query_params = {
             "simple": 1 if simple_search else 0,
             "page": page,
             "per_page": per_page,
         }
+        post_params = {
+            "query": search_query,
+        }
 
         if fields:
-            payload.update(utils.build_fields_query(fields))
+            query_params.update(utils.build_fields_query(fields))
 
         if order_by:
-            payload.update({"orderby": order_by, "order": order})
+            query_params.update({"orderby": order_by, "order": order})
 
         search_endpoint = "tickets"
 
         # Sidestep the client.post, since it assumes POSTs are JSON-only
-        return self.client.request("POST", search_endpoint, data=payload)
+        search_endpoint = "tickets?" + urlencode(query_params, quote_via=quote_plus)
+        return self.client.request("POST", search_endpoint, data=post_params)
