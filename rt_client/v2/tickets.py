@@ -360,5 +360,6 @@ class TicketManager(RecordManager):
         if order_by:
             payload.update({"orderby": order_by, "order": order})
 
-        search_endpoint = "tickets?" + urlencode(payload, quote_via=quote_plus)
-        return self.client.get(search_endpoint)
+        search_endpoint = "tickets"
+
+        return self.client.post(search_endpoint, data=payload)
