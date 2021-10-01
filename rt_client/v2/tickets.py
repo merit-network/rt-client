@@ -161,9 +161,6 @@ class TicketManager(RecordManager):
             files += self._prep_attachments(attachments)
             return self.client.post_files(f"ticket/{ticket_id}/comment", files)
         else:
-            # Because this endpoint needs a text/plain content type,
-            # it calls client.sess.post directly, rather than going through
-            # client.post like most other methods.
             return self.client.post(
                 self.client.host + f"ticket/{ticket_id}/comment",
                 data=comment,
