@@ -58,6 +58,7 @@ class Client(object):
         self.auth_endpoint = auth_endpoint
         self.api_endpoint = api_endpoint
         self.sess = requests.Session()
+        self.headers = {}
         # Set important endpoints
         self.base_host = endpoint
         self.host = urljoin(endpoint, api_endpoint)
@@ -72,7 +73,7 @@ class Client(object):
             # Use token authentication, if able
             if self.auth_token:
                 token = f"token {self.auth_token}"
-                self.sess.headers.update({"Authorization": token})
+                self.headers.update({"Authorization": token})
             # Otherwise, revert to username/password authentication
             else:
                 self.sess.post(
@@ -146,7 +147,18 @@ class Client(object):
 
         _url = urljoin(self.host, url)
 
-        response = self.sess.request(method, _url, verify=self.verify, *args, **kwargs)
+        if 'headers' in kwargs:
+            kwargs['headers'] = {**self.headers, **kwargs['headers']}
+        else:
+            kwargs['headers'] = self.headers
+
+        agent = self.sess
+
+        # Token-authenticated requests should skip session handling
+        if self.auth_token:
+            agent = requests
+
+        response = agent.request(method, _url, verify=self.verify, *args, **kwargs)
 
         if retries > 0 and self._missing_or_stale_session_cookie(response):
             # The request failed for some reason. Incase the issue was a
