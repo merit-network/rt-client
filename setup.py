@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import setuptools
+from setuptools import setup
 
-setuptools.setup(setup_requires=["pbr>=4.0.2"], pbr=True)
+setup()
