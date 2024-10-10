@@ -1,0 +1,18 @@
+[project]
+name = "rt-client"
+description = "Request Tracker Client"
+version = "0.0.1.dev36"
+authors = [
+    { name = "Catherine Sanson", email = "catherine.sanson@catalyst.net.nz" }
+]
+dependencies = [
+    "pbr>=4.0.2",
+    "requests>=2.18.4",
+    "python-magic>=0.4.15"
+]
+
+[build-system]
+build-backend = 'setuptools.build_meta'
+requires = [
+    'setuptools',
+]
